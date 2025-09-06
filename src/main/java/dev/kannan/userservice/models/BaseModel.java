@@ -20,3 +20,4 @@ public class BaseModel {
     private Date lastModifiedAt;
     private boolean isDeleted;
 }
+
