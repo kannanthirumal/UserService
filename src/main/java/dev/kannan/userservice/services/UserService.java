@@ -8,5 +8,4 @@ public interface UserService {
     User signup(String name, String email, String password);
     User validateToken(String tokenValue);
     void logout(String tokenValue);
-
 }
