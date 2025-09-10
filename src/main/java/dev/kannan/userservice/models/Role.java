@@ -8,5 +8,5 @@ import lombok.Setter;
 @Setter
 @Entity(name = "roles")
 public class Role extends BaseModel {
-    private String roleName;
+    private String value; //role name
 }

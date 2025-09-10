@@ -17,6 +17,10 @@ public class Token extends BaseModel {
     @ManyToOne
     private User user;
     private Date expiryAt;
+    private boolean isDeleted;
+
+    /* expiry could have been a "Long" datatype as well -> epoch */
+    private Long expiry; //epoch
 }
 
 /*  1             1
