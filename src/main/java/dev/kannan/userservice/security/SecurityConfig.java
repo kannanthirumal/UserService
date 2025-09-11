@@ -171,10 +171,11 @@ public class SecurityConfig {
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-                .redirectUri("http://127.0.0.1:8080/login/oauth2/code/oidc-client")
+                .redirectUri("https://oauth.pstmn.io/v1/callback")
                 .postLogoutRedirectUri("http://127.0.0.1:8080/")
                 .scope(OidcScopes.OPENID)
                 .scope(OidcScopes.PROFILE)
+                .scope("ADMIN") //I added this custom scope for my login
                 .clientSettings(ClientSettings.builder()
                         .requireAuthorizationConsent(true) // Shows consent screen
                         .build())
@@ -274,3 +275,34 @@ public class SecurityConfig {
 
     Together, these enable secure issuance and validation of JWT tokens in the OAuth2 flow.
 */
+
+/*
+ * ============================
+ * Postman OAuth2 Setup Reference
+ * ============================
+ *
+ * 1. Header Prefix: -> removed "Bearer" and left it empty
+ *
+ * --- Configure New Token ---
+ * 2. Token Name: -> token-kannan-auth-service
+ * 3. Grant Type: -> Authorization Code
+ *
+ * 4. Callback URL: -> https://oauth.pstmn.io/v1/callback
+ *
+ * 5. Auth URL: -> http://localhost:8080/oauth2/authorize
+ *
+ * 6. Access Token URL: -> http://localhost:8080/oauth2/access-token
+ *
+ * 7. Client ID: -> used the default id from spring oauth dependency ->  oidc-client
+ *
+ * 8. Client Secret: -> used the default id from spring oauth dependency -> secret
+ *
+ *
+ * 9. Scope: -> ADMIN (I hardcoded "ADMIN" in the scope)
+ *
+ * ----------------------------
+ * 💡 Notes:
+ * - Ensure your `redirectUri` in the registered client matches the Postman callback URL.
+ * - Client must be allowed to use `authorization_code` and `refresh_token` grant types.
+ * - The `scope` (e.g., ADMIN) must be registered and allowed for the client.
+ */
