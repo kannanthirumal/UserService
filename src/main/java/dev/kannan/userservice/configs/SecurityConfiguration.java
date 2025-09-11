@@ -6,15 +6,18 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 
 /*
-  - Added this bean snippet inside the "securityFilterChain" method
-  - of the "SecurityOauthConfig" class
+  - rename this class from "SecurityConfig" to "SecurityConfiguration"
+  - as I have two classes of the same name
+  -
+  - Also, commenting this out and adding the below snippet inside the "securityFilterChain" method
+  - of the "SecurityConfig" class in the "security" package
   - to prevent creation of multiple conflicting "SecurityFilterChain" beans
   - which caused the "Error creating bean with name 'springSecurityFilterChain'" exception
   - by ensuring only a single SecurityFilterChain bean is created for Spring Security configuration
 */
 
 @Configuration
-public class SecurityConfig {
+public class SecurityConfiguration {
     /*
         - got this configuration from spring security official docs
         - https://docs.spring.io/spring-security/reference/servlet/configuration/java.html
