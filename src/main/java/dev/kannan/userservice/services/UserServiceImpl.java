@@ -71,7 +71,7 @@ public class UserServiceImpl implements UserService{
             System.out.println(uniqueId);  // e.g., "f47ac10b-58cc-4372-a567-0e02b2c3d479"
          */
 
-        token.setValue(RandomStringUtils.random(128));
+        token.setValue(RandomStringUtils.randomAlphanumeric(128));
         token.setUser(user);
         //setting expiry date which is 30 days from current date - it's a business decision
         //converted LocalDate to Date as the datatype of expiry is "Date" in the model
@@ -117,7 +117,43 @@ public class UserServiceImpl implements UserService{
 
     @Override
     public User validateToken(String tokenValue) {
-        return null;
+        /* Instead of all this, I can write a custom JPA query in the repository */
+        /*
+             Optional<Token> optionalToken = tokenRepository.findByValue(tokenValue);
+            if(optionalToken.isEmpty()){
+                throw new InvalidTokenException("Invalid token");
+            }
+
+            Token token = optionalToken.get();
+            if(token.getExpiry() < System.currentTimeMillis()){
+                throw new InvalidTokenException("Token has expired");
+            }
+
+            if(token.isDeleted()) {
+                throw new InvalidTokenException("Token has expired");
+            }
+
+            User user = token.getUser();
+            if(user == null) {
+                throw new RuntimeException("User not found for the token");
+            }
+
+            return user;
+        */
+
+        Optional<Token> optionalToken = tokenRepository.findByValueAndIsDeletedAndExpiryGreaterThan(
+                tokenValue,
+                false,
+                System.currentTimeMillis()
+        );
+
+        if(optionalToken.isEmpty()){
+            throw new InvalidTokenException("Invalid or expired token");
+        }
+
+        Token token = optionalToken.get();
+        User user = token.getUser();
+        return user;
     }
 
     @Override

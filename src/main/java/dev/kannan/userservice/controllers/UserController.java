@@ -80,8 +80,8 @@ public class UserController {
     }
 
     /**
-     * we can also make it a get/put/patch request
-     * I made it as patch coz I'm soft deleting th erecord
+     * we can also make it a delete request
+     * ,but I made it a patch req coz I'm soft deleting the record
      * updating the isDeleted boolean field **/
     @PatchMapping("/logout")
     public ResponseEntity<LogOutResponseDto> logOut(@RequestBody LogOutRequestDto logOutRequestDto) {
@@ -105,8 +105,35 @@ public class UserController {
         }
     }
 
-    @PostMapping("/validate")
-    public UserDto validateToken(@RequestBody ValidateTokenDto validateTokenDto) {
-        return null;
+    /*
+        - I didn't create "ValidateTokenRequestDto"
+        - because then I would have to send it in the request body
+        - but as per REST guidelines it's not advisable to send a request body for a get request
+        - this is not okay right? "public ValidateTokenResponseDto validateToken(@RequestBody ValidateTokenRequestDto validateTokenDto)"
+     */
+    @GetMapping("/validate-token/{token}")
+    public ResponseEntity<ValidateTokenResponseDto> validateToken(@PathVariable("token") String tokenValue) {
+        ValidateTokenResponseDto response = new ValidateTokenResponseDto();
+        try {
+            User user = userService.validateToken(tokenValue);
+            response.setEmail(user.getEmail());
+            response.setNameOfUser(user.getName());
+            response.setMessage("User validated successfully");
+            response.setTokenValue(tokenValue);
+            response.setStatus(ResponseStatus.SUCCESS);
+
+            return ResponseEntity.status(HttpStatus.OK).body(response);
+
+        }
+        catch (InvalidTokenException e) {
+            response.setStatus(ResponseStatus.FAILURE);
+            response.setMessage("Invalid or expired token");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        }
+        catch (Exception e) {
+            response.setStatus(ResponseStatus.FAILURE);
+            response.setMessage("Internal server error");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
     }
 }

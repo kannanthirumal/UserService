@@ -13,15 +13,16 @@ public class SecurityConfig {
         - by default, spring security protects all the endpoints
         - I'm just customizing the end points that doesn't need any auth
     */
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/signup").permitAll()
-                        .anyRequest().permitAll() //.anyRequest().authenticated()
-                        .and().cors().disable()
-                        .csrf().disable()
-                );
+                        .anyRequest().permitAll()  // Or use `.authenticated()` if required
+                )
+                .cors().disable()
+                .csrf().disable();
 
         return http.build();
     }
