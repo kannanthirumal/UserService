@@ -1,5 +1,6 @@
 package dev.kannan.userservice.services;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import dev.kannan.userservice.models.Token;
 import dev.kannan.userservice.models.User;
 

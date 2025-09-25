@@ -1,5 +1,8 @@
 package dev.kannan.userservice.services;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.kannan.userservice.events.SendEmail;
 import dev.kannan.userservice.exceptions.InvalidCredentialsException;
 import dev.kannan.userservice.exceptions.InvalidTokenException;
 import dev.kannan.userservice.exceptions.UserAlreadyExistsException;
@@ -8,6 +11,7 @@ import dev.kannan.userservice.models.User;
 import dev.kannan.userservice.repositories.TokenRepository;
 import dev.kannan.userservice.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -28,9 +32,36 @@ public class UserServiceImpl implements UserService{
         and to verify raw passwords against the stored hashed passwords during authentication.
     */
 
+    /*
+        BCryptPasswordEncoder:
+        - Declared as a @Bean in the configuration class because Spring Boot
+          does NOT auto-configure a PasswordEncoder for you.
+    */
     private BCryptPasswordEncoder bCryptPasswordEncoder;
     private UserRepository userRepository;
     private TokenRepository tokenRepository;
+
+    /*
+        KafkaTemplate<String, String>:
+        - No need to create a @Bean manually if you’re using Spring Boot.
+        - Boot auto-configures KafkaTemplate when spring-kafka is on the classpath
+          and Kafka properties are defined in application.properties/application.yml.
+        - Example (application.properties):
+              spring.kafka.bootstrap-servers=localhost:9092
+              spring.kafka.producer.key-serializer=org.apache.kafka.common.serialization.StringSerializer
+              spring.kafka.producer.value-serializer=org.apache.kafka.common.serialization.StringSerializer
+        - Can be injected directly here without defining a custom bean.
+    */
+    private KafkaTemplate<String, String> kafkaTemplate;
+
+    /*
+    ObjectMapper:
+    - JSON serializer/deserializer provided by Jackson (auto-configured by Spring Boot).
+    - Boot provides a default bean so I can inject it directly; only override if custom config is needed.
+    - (e.g., custom serializers, date format, property naming strategy etc).
+    - Used for: Converting Java objects to JSON and parsing JSON back into Java objects.
+*/
+    private ObjectMapper objectMapper;
 
     /*
         Inject the value of the config property token.expiry.days here.
@@ -39,10 +70,12 @@ public class UserServiceImpl implements UserService{
     @Value("${token.expiry.days:30}")
     private int tokenExpiryDays;
 
-    public UserServiceImpl(BCryptPasswordEncoder bCryptPasswordEncoder, UserRepository userRepository, TokenRepository tokenRepository) {
+    public UserServiceImpl(BCryptPasswordEncoder bCryptPasswordEncoder, UserRepository userRepository, TokenRepository tokenRepository, KafkaTemplate<String, String> kafkaTemplate, ObjectMapper objectMapper) {
         this.bCryptPasswordEncoder = bCryptPasswordEncoder;
         this.userRepository = userRepository;
         this.tokenRepository = tokenRepository;
+        this.kafkaTemplate = kafkaTemplate;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -98,6 +131,13 @@ public class UserServiceImpl implements UserService{
         - So even though you wrote throws UserAlreadyExistsException, it's optional.
         - The interface method doesn't need to declare it, and no compile error will occur.
      */
+
+    /*
+        - JsonProcessingException is not a runtime exception.
+        - It extends IOException, which is a checked exception.
+        - So I must either catch it with a try-catch block or declare it with throws in the method signature
+        - and I did the former
+     */
     @Override
     public User signup(String name, String email, String password) {
 
@@ -111,6 +151,24 @@ public class UserServiceImpl implements UserService{
         user.setName(name);
         user.setEmail(email);
         user.setPassword(bCryptPasswordEncoder.encode(password));
+
+        SendEmail sendEmail = new SendEmail();
+        sendEmail.setTo(email);
+        sendEmail.setSubject("User Registration");
+        sendEmail.setBody("Welcome " + name + ". Your user account has been created successfully!");
+        sendEmail.setFrom("my_email@my_email.com"); //added a dummy value for time being
+
+        /*
+            Register/publish an email event in Kafka:
+            - Topic: "send_email"
+            - The SendEmail object is converted to JSON using objectMapper.
+            - Actual sending is handled asynchronously by a separate consumer service.
+        */
+        try {
+            kafkaTemplate.send("send_email", objectMapper.writeValueAsString(sendEmail));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Error while converting email event to JSON.");
+        }
 
         return userRepository.save(user);
     }
