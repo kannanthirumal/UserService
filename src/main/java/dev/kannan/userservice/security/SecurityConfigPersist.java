@@ -87,12 +87,9 @@ public class SecurityConfigPersist {
                 )
                 .authorizeHttpRequests((authorize) ->
                         authorize
-                                .requestMatchers("/signup").permitAll() // (1) added from "SecurityCOnfiguration" file
                                 // Require authentication for all endpoints
                                 .anyRequest().authenticated()
                 )
-                .cors().disable() // (2) added from "SecurityCOnfiguration" file
-                .csrf().disable() // (3) added from "SecurityCOnfiguration" file
 
                 // Redirect unauthenticated users to /login for HTML requests
                 .exceptionHandling((exceptions) -> exceptions
@@ -113,9 +110,13 @@ public class SecurityConfigPersist {
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http)
             throws Exception {
         http
+                // Disable CSRF only for /users/signup
                 .authorizeHttpRequests((authorize) -> authorize
+                        .requestMatchers("/users/signup", "/users/login", "/actuator/health").permitAll()
                         .anyRequest().authenticated()
                 )
+                .cors().disable() // (2) added from "SecurityCOnfiguration" file
+                .csrf().disable() // (3) added from "SecurityCOnfiguration" file
                 // Enables form-based login
                 .formLogin(Customizer.withDefaults());
 
